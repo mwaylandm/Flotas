@@ -3,8 +3,7 @@
   "provider": "node",
   "steps": {
     "install": {
-      "commands": ["npm ci"]
+      "commands": ["npm install --omit=dev"]
     }
   }
 }
-
