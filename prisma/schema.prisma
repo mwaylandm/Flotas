@@ -1,0 +1,168 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  username      String?   @unique
+  password      String
+  role          UserRole  @default(OPERADOR)
+  currentTruckId String?  // ID del camión asignado actualmente (para tracking)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  serviceOrderLogs ServiceOrderLog[]
+  locationLogs  TruckLocationLog[]
+}
+
+model Truck {
+  id            String      @id @default(cuid())
+  placa         String      @unique
+  capacidad     Int         // litros
+  cargaActual   Int         @default(0) // litros
+  estado        TruckStatus @default(DISPONIBLE)
+  
+  // Tracking GPS
+  currentLat    Float?      @default(0)
+  currentLng    Float?      @default(0)
+  lastLocationUpdate DateTime?
+  currentHeading Float?     @default(0) // Dirección en grados (0-360)
+  currentSpeed  Float?      @default(0) // Velocidad en km/h
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  serviceOrders ServiceOrder[]
+  locationLogs  TruckLocationLog[]
+}
+
+model TruckLocationLog {
+  id        String   @id @default(cuid())
+  truckId   String
+  truck     Truck    @relation(fields: [truckId], references: [id], onDelete: Cascade)
+  userId    String?  // Usuario que reportó la ubicación
+  user      User?    @relation(fields: [userId], references: [id])
+  lat       Float
+  lng       Float
+  heading   Float?   @default(0)
+  speed     Float?   @default(0)
+  timestamp DateTime @default(now())
+  batteryLevel Float? // Nivel de batería del dispositivo si está disponible
+
+  @@index([truckId, timestamp])
+}
+
+model Client {
+  id            String       @id @default(cuid())
+  nombre        String
+  telefono      String
+  email         String?
+  direccion     String
+  latitud       Float?       @default(0)
+  longitud      Float?       @default(0)
+  tipoFosa      FosaType     @default(SEPTICA)
+  tipoCliente   ClientType   @default(PERSONA_NATURAL)
+  rut           String?
+  observaciones String?
+  volumen       Int?         @default(0)
+  precio        Float?       @default(0)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  serviceOrders ServiceOrder[]
+}
+
+model ServiceOrder {
+  id              String        @id @default(cuid())
+  truckId         String
+  truck           Truck         @relation(fields: [truckId], references: [id], onDelete: Cascade)
+  clientId        String
+  client          Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  volumen         Int           // litros
+  precio          Float
+  comision        Float?
+  comisionPagada  Boolean       @default(false)
+  progreso        OrderStatus   @default(PENDIENTE)
+  formaPago       PaymentMethod @default(EFECTIVO)
+  pagado          Boolean       @default(false)
+  referencia      String?
+  fechaProgramada DateTime      @default(now())
+  fechaCompletada DateTime?
+  observaciones   String?
+
+  facturaPdf      Bytes?
+  facturaNombre   String?
+  facturaSubidaAt DateTime?
+  
+  // Campos snapshot del cliente al momento de la orden
+  telefono        String?
+  direccion       String?
+  latitud         Float?
+  longitud        Float?
+  tipoFosa        FosaType?
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  logs            ServiceOrderLog[]
+}
+
+enum UserRole {
+  ADMIN
+  OPERADOR
+  ADMINISTRATIVO
+}
+
+enum TruckStatus {
+  DISPONIBLE
+  EN_SERVICIO
+  MANTENIMIENTO
+}
+
+enum FosaType {
+  SEPTICA
+  AGUAS_GRISES
+  INDUSTRIAL
+  POZO_NEGRO
+}
+
+enum ClientType {
+  PERSONA_NATURAL
+  EMPRESA
+}
+
+enum OrderStatus {
+  PENDIENTE
+  EN_CAMINO
+  OPERANDO
+  COMPLETADO
+  CANCELADO
+  FACTURACION_PENDIENTE
+  FACTURACION_TERMINADA
+  TERMINADA_CONTABILIZADA
+  PAGO_REALIZADO_Y_CONTABILIZADO
+}
+
+enum PaymentMethod {
+  EFECTIVO
+  TRANSFERENCIA
+  TARJETA
+  PAGO_ELECTRONICO
+  FACTURACION
+}
+
+model ServiceOrderLog {
+  id              String       @id @default(cuid())
+  serviceOrderId  String
+  serviceOrder    ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  previousStatus  OrderStatus
+  newStatus       OrderStatus
+  userId          String
+  user            User         @relation(fields: [userId], references: [id])
+  timestamp       DateTime     @default(now())
+  metadata        String?
+}

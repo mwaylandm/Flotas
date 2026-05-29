@@ -1,0 +1,17 @@
+Usar deploy-fast.ps1 52.91.243.25 ServerUbuntu.pem para publicar sistema en AWS de forma RÁPIDA (Recomendado).
+(Este script compila en el servidor, sube cambios y aplica migraciones de base de datos automáticamente).
+
+CASO 1: Solo cambios de Código
+------------------------------
+Ejecutar directamente el comando de publicación.
+
+CASO 2: Cambios en Base de Datos (schema.prisma)
+------------------------------------------------
+1. Primero crear la migración en tu PC:
+   npx prisma migrate dev --name nombre_del_cambio
+   
+2. Luego ejecutar el comando de publicación.
+
+COMANDO DE PUBLICACIÓN:
+-----------------------
+powershell -ExecutionPolicy Bypass -File "scripts\deploy-fast.ps1" -ServerIP "52.91.243.25" -KeyPath "scripts\ServerUbuntuAquaflow.pem"

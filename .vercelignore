@@ -1,0 +1,16 @@
+.next
+out
+build
+temp_deploy_prebuilt
+temp_deploy_artifacts
+aquaflow-deploy.zip
+aquaflow-artifacts.zip
+backups
+*.db
+*.db-journal
+dev-remote.db
+prisma/dev.db
+prisma/dev.db-journal
+Cascada - copia (57)Neon.rar
+.trae
+node_modules
